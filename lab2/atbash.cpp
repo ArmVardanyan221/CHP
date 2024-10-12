@@ -1,110 +1,87 @@
 #include <iostream>
 #include <string>
+#include <unordered_map>
+
 using namespace std;
-class Cipher {
-public:
-    void toLowerCase(string &str) {
-        for (char &c : str) {
-            if (c >= 'A' && c <= 'Z') {
-                c += 32;
-            }
+
+class Crypto
+{
+    public:
+    virtual char* encrypt(const string &realtext) = 0;
+    virtual char* decrypt(const string &ciphertext) = 0;
+    
+    virtual ~Crypto() = 0;
+};
+Crypto::~Crypto() {}
+
+class TemplateMethodDecrypter : public Crypto
+{
+    private:
+    int len = 256;
+    char* arr1;
+    char* arr2; 
+    
+    int findIndex(char sym)
+    {
+        int i = 0;
+        while(arr2[i] != sym) i++;
+        return i;
+    }
+    
+    public:
+    TemplateMethodDecrypter()
+    {
+        arr1 = new char[len];
+        arr2 = new char[len];
+        
+        for(int i = 0; i < len; i++)
+        {
+            arr1[i] = (char)i;
+            arr2[i] = (char)(len - i);
         }
     }
-
-    void toUpperCase(string &str) {
-        for (char &c : str) {
-            if (c >= 'a' && c <= 'z') {
-                c -= 32;
-            }
+    
+    virtual char* encrypt(const string &realtext) override {
+        char* newtext = new char[realtext.length()];
+        
+        for(int i = 0; i < realtext.length(); i++)
+        {
+            *(newtext + i) = arr2[(int)realtext[i]];
         }
+    
+        return newtext;
     }
-
-    void atbashEncrypt(string &str) {
-        int mask = (str[0] <= 'Z') ? ('A' + 'Z') : ('a' + 'z');
-        for (char &c : str) {
-            if (isalpha(c)) {
-                c = mask - c;
-            }
+    
+    virtual char* decrypt(const string &ciphertext) override {
+        char* newtext = new char[ciphertext.length()];
+        
+        for(int i = 0; i < ciphertext.length(); i++)
+        {
+            *(newtext + i) = arr1[findIndex(ciphertext[i])];
         }
+    
+        return newtext;
     }
-
-    void atbashDecrypt(string &str) {
-        atbashEncrypt(str);
-    }
-
-    void caesarEncrypt(string &str, int key) {
-        key %= 26;
-        for (char &c : str) {
-            if (c == ' ') continue;
-            if (isalpha(c)) {
-                char base = islower(c) ? 'a' : 'A';
-                c = (c - base + key) % 26 + base;
-            }
-        }
-    }
-
-    void caesarDecrypt(string &str, int key) {
-        key %= 26;
-        for (char &c : str) {
-            if (c == ' ') continue;
-            if (isalpha(c)) {
-                char base = islower(c) ? 'a' : 'A';
-                c = (c - base - key + 26) % 26 + base;
-            }
-        }
+    
+    ~TemplateMethodDecrypter() override
+    {
+        delete[] arr1;
+        delete[] arr2;
     }
 };
 
 int main() {
-    Cipher cipher;
-    string inputString;
-    int alg, type, alpha, key = 4;
+    Crypto& crypto = *new TemplateMethodDecrypter();
+    
+    string realtext;
+    cout << "Enter the text: ";
+    cin >> realtext;
+    
+    string ciphertext = crypto.encrypt(realtext);
+    cout << "Ciphertext: " << ciphertext << endl;
 
-    cout << "Which algorithm do you want to use: \n1. Atbash\n2. Caesar\n";
-    cin >> alg;
-    cout << "Do you want to \n1. Encrypt \nor\n2. Decrypt\n";
-    cin >> type;
-    cout << "Do you want an Upper case or Lower case?\nPress 1 for Upper case:\nPress 2 for Lower case: ";
-    cin >> alpha;
-    cin.ignore();
-    cout << "Print your sentence: ";
-    getline(cin, inputString);
-
-    if (alpha == 1) {
-        cipher.toUpperCase(inputString);
-    } else if (alpha == 2) {
-        cipher.toLowerCase(inputString);
-    }
-
-    string originalString = inputString;
-
-    if (alg == 2) {
-        cout << "Print key: ";
-        cin >> key;
-        if (type == 1) {
-            cipher.caesarEncrypt(inputString, key);
-            cout << "Caesar Encrypting: " << inputString << endl;
-        } else if (type == 2) {
-            cipher.caesarDecrypt(inputString, key);
-            cout << "Caesar Decrypting: " << inputString << endl;
-        }
-    } else if (alg == 1) {
-        if (type == 1) {
-            cipher.atbashEncrypt(inputString);
-            cout << "Atbash Encrypting: " << inputString << endl;
-        } else if (type == 2) {
-            cipher.atbashDecrypt(inputString);
-            cout << "Atbash Decrypting: " << inputString << endl;
-        }
-    }
-
-    // cipher.atbashDecrypt(inputString);
-    cout << "After Atbash Decrypting: " << inputString << endl;
-    if (originalString == inputString) {
-        cout << "Same word" << endl;
-    } else {
-        cout << "Not same word" << endl;
-    }
+    string decryptedText = crypto.decrypt(ciphertext);
+    cout << "Decrypted text: " << decryptedText << endl;
 
     return 0;
 }
