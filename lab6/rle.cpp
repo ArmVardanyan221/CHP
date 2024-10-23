@@ -2,55 +2,83 @@
 #include <string>
 using namespace std;
 
-class RunLengthEncoding {
-public:
-    string encode(const string& input) {
-        string encoded = "";
-        int length = input.length();
-        unsigned char count = 1;
+class Zip
+{
+    public:
+    virtual string zip(const string& plainText) = 0;
+    virtual string unzip(const std::string& zipText) = 0;
+    
+    virtual ~Zip() = 0;
+};
+Zip::~Zip() {}
 
-        for (int i = 1; i <= length; ++i) {
-            if (i < length && input[i] == input[i - 1]) {
+class RLE : public Zip
+{
+    public:
+    
+    RLE(){}
+    ~RLE() override{}
+    
+    string zip(const string& plainText) override{
+        string zipped = "";
+        int len = plainText.length();
+        
+        for (int i = 0; i < len; ++i) {
+            char currentChar = plainText[i];
+            int count = 1;
+    
+            while (i + 1 < len && plainText[i] == plainText[i + 1]) {
                 count++;
-            } else {
-                encoded += input[i - 1];
-                encoded += static_cast<char>(count);
-                count = 1;
+                i++;
             }
+    
+            while (count > 255) {
+                zipped += currentChar;
+                zipped += (char)255;
+                count -= 255;
+            }
+    
+            zipped += currentChar;
+            zipped += (char)count;
         }
-        return encoded;
+
+        return zipped;
     }
 
-    string decode(const string& encoded) {
-        string decoded = "";
-        int index = 0;
-
-        while (index < encoded.length()) {
-            char currentChar = encoded[index++];
-            unsigned char count = static_cast<unsigned char>(encoded[index++]);
-
-            decoded.append(count, currentChar);
+    string unzip(const string& zipText) override {
+        string unzipped = "";
+        int len = zipText.length();
+    
+        for (int i = 0; i < len; i += 2) {
+            char currentChar = zipText[i];
+            int count = (unsigned char)zipText[i + 1];
+    
+            unzipped.append(count, currentChar);
         }
-        return decoded;
+    
+        return unzipped;
     }
 };
 
 int main() {
-    RunLengthEncoding rle;
     string input;
-
     cout << "Enter a string to encode: ";
     cin >> input;
-
-    string encoded = rle.encode(input);
-    cout << "Encoded: ";
-    for (size_t i = 0; i < encoded.length(); i += 2) {
-        cout << encoded[i] << (static_cast<unsigned char>(encoded[i + 1]));
+    
+    Zip& zipper = *new RLE();
+    string zipped = zipper.zip(input);
+    cout << "Zipped string: ";
+    for (char c : zipped) {
+        cout << c;
     }
     cout << endl;
 
-    string decoded = rle.decode(encoded);
-    cout << "Decoded: " << decoded << endl;
+    string unzipped = zipper.unzip(zipped);
+    cout << "Unzipped string: " << unzipped << endl;
+    
+    cout << "Inputed length: " << input.length() << endl;
+    cout << "Zipped length: " << zipped.length() << endl;
+    cout << "Unzipped length: " << unzipped.length() << endl;
 
     return 0;
 }
